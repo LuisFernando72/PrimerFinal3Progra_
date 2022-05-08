@@ -1,7 +1,11 @@
 package vista;
 
 import java.awt.Component;
+import java.awt.Graphics;
 import java.awt.event.KeyEvent;
+import static java.awt.image.ImageObserver.HEIGHT;
+import java.awt.print.PageFormat;
+import java.awt.print.PrinterException;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -10,20 +14,27 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import static java.sql.JDBCType.NULL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import modelo.ContarLineas;
+import modelo.Ver_Imprimir;
 
 /**
  *
  * @author Luis Fernando Paxel
  */
 public class Control extends javax.swing.JFrame {
-
+    
     ContarLineas Contar;
     JFileChooser chooser = new JFileChooser();
     File archivo;
-
+    Ver_Imprimir impresora;
+    
     public Control() {
         initComponents();
         setLocationRelativeTo(null);
@@ -33,7 +44,7 @@ public class Control extends javax.swing.JFrame {
         //    TextareaLineas.setWrapStyleWord(true);
 
     }
-
+    
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -48,7 +59,7 @@ public class Control extends javax.swing.JFrame {
         btnSalir = new javax.swing.JButton();
         btnColor = new javax.swing.JButton();
         jScrollPane3 = new javax.swing.JScrollPane();
-        renta = new javax.swing.JTextArea();
+        txtAreaGrafico = new javax.swing.JTextArea();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         itemAbrir = new javax.swing.JMenuItem();
@@ -77,7 +88,7 @@ public class Control extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        jPanel1.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel1.setBackground(new java.awt.Color(0, 102, 102));
         jPanel1.setLayout(null);
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
@@ -180,11 +191,11 @@ public class Control extends javax.swing.JFrame {
         jPanel1.add(jPanel5);
         jPanel5.setBounds(1030, 10, 230, 320);
 
-        renta.setBackground(new java.awt.Color(204, 204, 204));
-        renta.setColumns(20);
-        renta.setRows(5);
-        renta.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 204, 204), 3, true));
-        jScrollPane3.setViewportView(renta);
+        txtAreaGrafico.setBackground(new java.awt.Color(204, 204, 204));
+        txtAreaGrafico.setColumns(20);
+        txtAreaGrafico.setRows(5);
+        txtAreaGrafico.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 204, 204), 3, true));
+        jScrollPane3.setViewportView(txtAreaGrafico);
 
         jPanel1.add(jScrollPane3);
         jScrollPane3.setBounds(20, 340, 1240, 330);
@@ -222,6 +233,11 @@ public class Control extends javax.swing.JFrame {
         itemNuevo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Imagenes/add-file.png"))); // NOI18N
         itemNuevo.setText("Nuevo");
         itemNuevo.setBorder(null);
+        itemNuevo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                itemNuevoActionPerformed(evt);
+            }
+        });
         jMenu1.add(itemNuevo);
 
         itemGuardar.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_G, java.awt.event.InputEvent.CTRL_DOWN_MASK));
@@ -271,6 +287,11 @@ public class Control extends javax.swing.JFrame {
         itemSalir.setForeground(new java.awt.Color(0, 0, 0));
         itemSalir.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Imagenes/arrow.png"))); // NOI18N
         itemSalir.setText("Salir");
+        itemSalir.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                itemSalirActionPerformed(evt);
+            }
+        });
         jMenu1.add(itemSalir);
 
         jMenuBar1.add(jMenu1);
@@ -447,7 +468,7 @@ public class Control extends javax.swing.JFrame {
         String documento = "";
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(archivo), StandardCharsets.UTF_8));
-
+            
             int cod;
             while ((cod = in.read()) != -1) {
                 char caracter = (char) cod;
@@ -466,19 +487,17 @@ public class Control extends javax.swing.JFrame {
         try {
             chooser.showSaveDialog(this);
             archivo = chooser.getSelectedFile();
-
+            
             if (archivo != null) {
                 FileWriter save = new FileWriter(archivo + ".txt");
                 save.write(TextareaLineas.getText());
                 save.close();
-                JOptionPane.showMessageDialog(null,
-                        "Exito!!",
-                        "Guardar", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(null, "Archivo creado correctamente!! ", "Guardado", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Aceptar2.png"));
+                
             }
         } catch (IOException ex) {
-            JOptionPane.showMessageDialog(null,
-                    "Ha ocurrido un error",
-                    "Error", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Error al creal el archivo " + ex, "Error", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Cancelado.png"));
+            
         }
     }//GEN-LAST:event_itemGuardarcomoActionPerformed
 
@@ -499,55 +518,131 @@ public class Control extends javax.swing.JFrame {
                     FileWriter save = new FileWriter(ruta);
                     save.write(TextareaLineas.getText());
                     save.close();
-                    JOptionPane.showMessageDialog(null,
-                            "El archivo se a guardado Exitosamente",
-                            "Información", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "Archivo creado correctamente!! ", "Guardado", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Aceptar2.png"));
+                    
                 }
             } catch (IOException ex) {
-                JOptionPane.showMessageDialog(null,
-                        "Su archivo no se ha guardado",
-                        "Advertencia", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(null, "Error al creal el arvchivo " + ex, "Error", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Cancelado.png"));
             }
         } else {
             try {
                 JFileChooser file = new JFileChooser();
                 file.showSaveDialog(this);
                 File guarda = file.getSelectedFile();
-
+                
                 if (guarda != null) {
                     FileWriter save = new FileWriter(guarda + ".txt");
                     save.write(TextareaLineas.getText());
                     save.close();
-                    JOptionPane.showMessageDialog(null,
-                            "El archivo se a guardado Exitosamente",
-                            "Información", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "Archivo creado correctamente!! ", "Guardado", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Aceptar2.png"));
+                    
                 }
             } catch (IOException ex) {
-                JOptionPane.showMessageDialog(null,
-                        "Su archivo no se ha guardado",
-                        "Advertencia", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(null, "Error al creal el arvchivo " + ex, "Error", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Cancelado.png"));
+                
             }
         }
-
+        
 
     }//GEN-LAST:event_itemGuardarActionPerformed
 
     private void itemImprimirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_itemImprimirActionPerformed
         // TODO add your handling code here:
-        TextareaLineas.setText("casadasda");
+        String AreaEntrada = this.TextareaLineas.getText();
+        String AreaSalida = this.txtAreaGrafico.getText();
+        String[] options = {"Imprimir Entrada", "Imprimir Salida"};
+        ImageIcon icon = new ImageIcon("src/Imagenes/Impresoras.png");
+        String n = (String) JOptionPane.showInputDialog(null, "Opciones",
+                "Impresora", JOptionPane.QUESTION_MESSAGE, icon, options, options[0]);
+        
+        if (n != null) {
+            
+            switch (n) {
+                
+                case "Imprimir Entrada":
+                    impresora = new Ver_Imprimir(AreaEntrada);
+                    impresora.imprimir();
+                    break;
+                
+                case "Imprimir Salida":
+                    impresora = new Ver_Imprimir(AreaSalida);
+                    impresora.imprimir();
+                    
+                    break;
+                
+                default:
+                    JOptionPane.showMessageDialog(null, "Por favor elija una opcion correcta ", "Error", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Error1.png"));
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "Cancelado ", "Cancelar", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Error1.png"));
+            
+        }
+
     }//GEN-LAST:event_itemImprimirActionPerformed
 
     private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimpiarActionPerformed
         // TODO add your handling code here:
         TextareaLineas.setText("");
-
+        //    String lineas = TextareaLineas.getText();
+        //    System.out.println("lineas\n" + lineas);
 
     }//GEN-LAST:event_btnLimpiarActionPerformed
 
+    private void itemSalirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_itemSalirActionPerformed
+        // TODO add your handling code here:
+        System.exit(0);
+    }//GEN-LAST:event_itemSalirActionPerformed
+
+    private void itemNuevoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_itemNuevoActionPerformed
+        // TODO add your handling code here:
+        if (archivo != null) {
+            try {
+                String ruta = archivo.getAbsolutePath();
+                //    Area_murcielago.setText(ruta);
+
+                String nombre = "";
+                //   JFileChooser file = new JFileChooser();
+                //  file.showSaveDialog(this);
+                //   File guarda = file.getSelectedFile();
+
+                if (ruta != null) {
+                    FileWriter save = new FileWriter(ruta);
+                    save.write(TextareaLineas.getText());
+                    save.close();
+                    JOptionPane.showMessageDialog(null, "Archivo creado correctamente!! ", "Guardado", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Aceptar2.png"));
+                    
+                }
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(null, "Error al creal el arvchivo " + ex, "Error", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Cancelado.png"));
+            }
+        } else {
+            try {
+                JFileChooser file = new JFileChooser();
+                file.showSaveDialog(this);
+                File guarda = file.getSelectedFile();
+                
+                if (guarda != null) {
+                    FileWriter save = new FileWriter(guarda + ".txt");
+                    save.write(TextareaLineas.getText());
+                    save.close();
+                    JOptionPane.showMessageDialog(null, "Archivo creado correctamente!! ", "Guardado", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Aceptar2.png"));
+                    
+                }
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(null, "Error al creal el arvchivo " + ex, "Error", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Cancelado.png"));
+                
+            }
+        }
+        
+        TextareaLineas.setText("");//Limpiando el TextArea
+        
+
+    }//GEN-LAST:event_itemNuevoActionPerformed
+    
     public void contar() {
         int Area = TextareaLineas.getRows();
         System.out.println("" + Area);
-
+        
     }
 
     /**
@@ -625,6 +720,6 @@ public class Control extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel5;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane4;
-    private javax.swing.JTextArea renta;
+    private javax.swing.JTextArea txtAreaGrafico;
     // End of variables declaration//GEN-END:variables
 }
