@@ -1,5 +1,6 @@
 package vista;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
@@ -9,18 +10,31 @@ import java.awt.print.PrinterException;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import static java.sql.JDBCType.NULL;
+import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.JTextPane;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultHighlighter;
+import javax.swing.text.DefaultStyledDocument;
+import javax.swing.text.Document;
+import javax.swing.text.Highlighter;
+import javax.swing.text.JTextComponent;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyleContext;
 import modelo.ContarLineas;
 import modelo.Ver_Imprimir;
 
@@ -29,22 +43,24 @@ import modelo.Ver_Imprimir;
  * @author Luis Fernando Paxel
  */
 public class Control extends javax.swing.JFrame {
-    
+
     ContarLineas Contar;
     JFileChooser chooser = new JFileChooser();
     File archivo;
     Ver_Imprimir impresora;
-    
+    private File ficheroa;
+
     public Control() {
         initComponents();
         setLocationRelativeTo(null);
-        Contar = new ContarLineas(TextareaLineas);
+        Contar = new ContarLineas(TexPane22);
         jScrollPane4.setRowHeaderView(Contar);
-        TextareaLineas.setLineWrap(true);
+        //    TexPane22.setLineWrap(true);
+        colors();
         //    TextareaLineas.setWrapStyleWord(true);
 
     }
-    
+
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -53,7 +69,7 @@ public class Control extends javax.swing.JFrame {
         jPanel2 = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
         jScrollPane4 = new javax.swing.JScrollPane();
-        TextareaLineas = new javax.swing.JTextArea();
+        TexPane22 = new javax.swing.JTextPane();
         jPanel5 = new javax.swing.JPanel();
         btnLimpiar = new javax.swing.JButton();
         btnSalir = new javax.swing.JButton();
@@ -108,12 +124,7 @@ public class Control extends javax.swing.JFrame {
         jPanel3.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 204, 204)));
         jPanel3.setLayout(null);
 
-        TextareaLineas.setBackground(new java.awt.Color(204, 204, 204));
-        TextareaLineas.setColumns(20);
-        TextareaLineas.setFont(new java.awt.Font("Open Sans Semibold", 0, 16)); // NOI18N
-        TextareaLineas.setRows(5);
-        TextareaLineas.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 204, 204), 2, true));
-        jScrollPane4.setViewportView(TextareaLineas);
+        jScrollPane4.setViewportView(TexPane22);
 
         jPanel3.add(jScrollPane4);
         jScrollPane4.setBounds(0, 0, 1000, 320);
@@ -339,6 +350,11 @@ public class Control extends javax.swing.JFrame {
         itemReemplazar.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Imagenes/switch.png"))); // NOI18N
         itemReemplazar.setText("Reemplazar");
         itemReemplazar.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(255, 255, 255), 1, true));
+        itemReemplazar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                itemReemplazarActionPerformed(evt);
+            }
+        });
         jMenu2.add(itemReemplazar);
 
         iteSeleccionar.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_E, java.awt.event.InputEvent.CTRL_DOWN_MASK));
@@ -354,6 +370,11 @@ public class Control extends javax.swing.JFrame {
         itemBuscar.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Imagenes/magnifying-glass.png"))); // NOI18N
         itemBuscar.setText("Buscar");
         itemBuscar.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(255, 255, 255), 1, true));
+        itemBuscar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                itemBuscarActionPerformed(evt);
+            }
+        });
         jMenu2.add(itemBuscar);
 
         jMenuBar1.add(jMenu2);
@@ -458,131 +479,186 @@ public class Control extends javax.swing.JFrame {
     }//GEN-LAST:event_itemAcercarActionPerformed
 
     private void itemAbrirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_itemAbrirActionPerformed
-        // TODO add your handling code here:
-
-        chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-        int retunrval = chooser.showDialog(null, "Abrir");
-        if (retunrval == JFileChooser.APPROVE_OPTION) {
-            archivo = chooser.getSelectedFile();
-        }
-        String documento = "";
-        try {
-            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(archivo), StandardCharsets.UTF_8));
-            
-            int cod;
-            while ((cod = in.read()) != -1) {
-                char caracter = (char) cod;
-                documento += caracter;
+        JFileChooser fc = new JFileChooser();
+        FileNameExtensionFilter filtro = new FileNameExtensionFilter(".html", ".txt", "html", "txt");
+        fc.setFileFilter(filtro);
+        fc.setMultiSelectionEnabled(false);
+        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        int seleccion = fc.showOpenDialog(this.getContentPane());
+        if (seleccion == JFileChooser.APPROVE_OPTION) {
+            ficheroa = fc.getSelectedFile();
+            try (FileReader fr = new FileReader(this.ficheroa)) {
+                String cadena = "";
+                int valor = fr.read();
+                while (valor != -1) {
+                    cadena += (char) valor;
+                    valor = fr.read();
+                }
+                TexPane22.setText(cadena);
+            } catch (FileNotFoundException ex) {
+                System.out.println(ex.getMessage());
+            } catch (IOException ex) {
+                System.out.println(ex.getMessage());
             }
-            in.close();
-        } catch (IOException ex) {
         }
-        TextareaLineas.append(documento);
 
     }//GEN-LAST:event_itemAbrirActionPerformed
+//METODO PARA ENCONTRAR LAS ULTIMAS CADENAS
 
+    private int findLastNonWordChar(String text, int index) {
+        while (--index >= 0) {
+            //  \\W = [A-Za-Z0-9]
+            if (String.valueOf(text.charAt(index)).matches("\\W")) {
+                break;
+            }
+        }
+        return index;
+    }
+
+    //METODO PARA ENCONTRAR LAS PRIMERAS CADENAS 
+    private int findFirstNonWordChar(String text, int index) {
+        while (index < text.length()) {
+            if (String.valueOf(text.charAt(index)).matches("\\W")) {
+                break;
+            }
+            index++;
+        }
+        return index;
+    }
+
+//METODO PARA PINTAS LAS PALABRAS RESEVADAS
+    private void colors() {
+
+        final StyleContext cont = StyleContext.getDefaultStyleContext();
+        //COLORES 
+        final AttributeSet attred = cont.addAttribute(cont.getEmptySet(), StyleConstants.Foreground, new Color(255, 0, 35));
+        final AttributeSet attgreen = cont.addAttribute(cont.getEmptySet(), StyleConstants.Foreground, new Color(0, 255, 54));
+        final AttributeSet attblue = cont.addAttribute(cont.getEmptySet(), StyleConstants.Foreground, new Color(0, 147, 255));
+        final AttributeSet attblack = cont.addAttribute(cont.getEmptySet(), StyleConstants.Foreground, new Color(0, 0, 0));
+
+        //STYLO 
+        DefaultStyledDocument doc = new DefaultStyledDocument() {
+            @Override
+            public void insertString(int offset, String str, AttributeSet a) throws BadLocationException {
+                super.insertString(offset, str, a);
+
+                String text = getText(0, getLength());
+                int before = findLastNonWordChar(text, offset);
+                if (before < 0) {
+                    before = 0;
+                }
+
+                int after = findFirstNonWordChar(text, offset + str.length());
+                int wordL = before;
+                int wordR = before;
+
+                while (wordR <= after) {
+                    if (wordR == after || String.valueOf(text.charAt(wordR)).matches("\\W")) {
+                        if (text.substring(wordL, wordR).matches("(\\W)*(html||ENTONCES|LOOP|A)")) {
+                            setCharacterAttributes(wordL, wordR - wordL, attblue, false);
+                        } else if (text.substring(wordL, wordR).matches("(\\W)*(|>|/)|<| <")) {
+                            setCharacterAttributes(wordL, wordR - wordL, attgreen, false);
+                        } else if (text.substring(wordL, wordR).matches("(\\W)*(RET|ETD|SLD)")) {
+                            setCharacterAttributes(wordL, wordR - wordL, attred, false);
+                        } else {
+                            setCharacterAttributes(wordL, wordR - wordL, attblack, false);
+                        }
+                        wordL = wordR;
+
+                    }
+                    wordR++;
+                }
+            }
+
+            public void romeve(int offs, int len) throws BadLocationException {
+                super.remove(offs, len);
+
+                String text = getText(0, getLength());
+                int before = findLastNonWordChar(text, offs);
+                if (before < 0) {
+                    before = 0;
+                }
+            }
+        };
+
+        JTextPane txt = new JTextPane(doc);
+        String temp = TexPane22.getText();
+        TexPane22.setStyledDocument(txt.getStyledDocument());
+        TexPane22.setText(temp);
+
+    }
     private void itemGuardarcomoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_itemGuardarcomoActionPerformed
         // TODO add your handling code here:
 
-        try {
-            chooser.showSaveDialog(this);
-            archivo = chooser.getSelectedFile();
-            
-            if (archivo != null) {
-                FileWriter save = new FileWriter(archivo + ".txt");
-                save.write(TextareaLineas.getText());
-                save.close();
-                JOptionPane.showMessageDialog(null, "Archivo creado correctamente!! ", "Guardado", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Aceptar2.png"));
-                
-            }
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(null, "Error al creal el archivo " + ex, "Error", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Cancelado.png"));
-            
-        }
+        abrirGuardar();
     }//GEN-LAST:event_itemGuardarcomoActionPerformed
 
     private void itemGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_itemGuardarActionPerformed
         // TODO add your handling code here:
-
-        if (archivo != null) {
-            try {
-                String ruta = archivo.getAbsolutePath();
-                //    Area_murcielago.setText(ruta);
-
-                String nombre = "";
-                //   JFileChooser file = new JFileChooser();
-                //  file.showSaveDialog(this);
-                //   File guarda = file.getSelectedFile();
-
-                if (ruta != null) {
-                    FileWriter save = new FileWriter(ruta);
-                    save.write(TextareaLineas.getText());
-                    save.close();
-                    JOptionPane.showMessageDialog(null, "Archivo creado correctamente!! ", "Guardado", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Aceptar2.png"));
-                    
-                }
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(null, "Error al creal el arvchivo " + ex, "Error", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Cancelado.png"));
-            }
+        if (ficheroa == null) {
+            abrirGuardar();
         } else {
-            try {
-                JFileChooser file = new JFileChooser();
-                file.showSaveDialog(this);
-                File guarda = file.getSelectedFile();
-                
-                if (guarda != null) {
-                    FileWriter save = new FileWriter(guarda + ".txt");
-                    save.write(TextareaLineas.getText());
-                    save.close();
-                    JOptionPane.showMessageDialog(null, "Archivo creado correctamente!! ", "Guardado", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Aceptar2.png"));
-                    
-                }
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(null, "Error al creal el arvchivo " + ex, "Error", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Cancelado.png"));
-                
-            }
+            escribirFichero();
         }
-        
-
     }//GEN-LAST:event_itemGuardarActionPerformed
+    private void abrirGuardar() {
+        JFileChooser fc = new JFileChooser();
+        FileNameExtensionFilter filtro = new FileNameExtensionFilter(".txt", "txt");
+        fc.setFileFilter(filtro);
+        fc.setMultiSelectionEnabled(false);
+        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        int seleccion = fc.showSaveDialog(this.getContentPane());
+        if (seleccion == JFileChooser.APPROVE_OPTION) {
+            ficheroa = fc.getSelectedFile();
+            escribirFichero();
 
+        }
+    }
+
+    private void escribirFichero() {
+        try (FileWriter fw = new FileWriter(ficheroa)) {
+            fw.write(TexPane22.getText());
+        } catch (IOException ex) {
+            Logger.getLogger(Control.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
     private void itemImprimirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_itemImprimirActionPerformed
         // TODO add your handling code here:
-        String AreaEntrada = this.TextareaLineas.getText();
+        String AreaEntrada = this.TexPane22.getText();
         String AreaSalida = this.txtAreaGrafico.getText();
         String[] options = {"Imprimir Entrada", "Imprimir Salida"};
         ImageIcon icon = new ImageIcon("src/Imagenes/Impresoras.png");
         String n = (String) JOptionPane.showInputDialog(null, "Opciones",
                 "Impresora", JOptionPane.QUESTION_MESSAGE, icon, options, options[0]);
-        
+
         if (n != null) {
-            
+
             switch (n) {
-                
+
                 case "Imprimir Entrada":
                     impresora = new Ver_Imprimir(AreaEntrada);
                     impresora.imprimir();
                     break;
-                
+
                 case "Imprimir Salida":
                     impresora = new Ver_Imprimir(AreaSalida);
                     impresora.imprimir();
-                    
+
                     break;
-                
+
                 default:
                     JOptionPane.showMessageDialog(null, "Por favor elija una opcion correcta ", "Error", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Error1.png"));
             }
         } else {
             JOptionPane.showMessageDialog(null, "Cancelado ", "Cancelar", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Error1.png"));
-            
+
         }
 
     }//GEN-LAST:event_itemImprimirActionPerformed
 
     private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimpiarActionPerformed
         // TODO add your handling code here:
-        TextareaLineas.setText("");
+        TexPane22.setText("");
         //    String lineas = TextareaLineas.getText();
         //    System.out.println("lineas\n" + lineas);
 
@@ -594,55 +670,85 @@ public class Control extends javax.swing.JFrame {
     }//GEN-LAST:event_itemSalirActionPerformed
 
     private void itemNuevoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_itemNuevoActionPerformed
-        // TODO add your handling code here:
-        if (archivo != null) {
-            try {
-                String ruta = archivo.getAbsolutePath();
-                //    Area_murcielago.setText(ruta);
-
-                String nombre = "";
-                //   JFileChooser file = new JFileChooser();
-                //  file.showSaveDialog(this);
-                //   File guarda = file.getSelectedFile();
-
-                if (ruta != null) {
-                    FileWriter save = new FileWriter(ruta);
-                    save.write(TextareaLineas.getText());
-                    save.close();
-                    JOptionPane.showMessageDialog(null, "Archivo creado correctamente!! ", "Guardado", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Aceptar2.png"));
-                    
-                }
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(null, "Error al creal el arvchivo " + ex, "Error", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Cancelado.png"));
-            }
-        } else {
-            try {
-                JFileChooser file = new JFileChooser();
-                file.showSaveDialog(this);
-                File guarda = file.getSelectedFile();
-                
-                if (guarda != null) {
-                    FileWriter save = new FileWriter(guarda + ".txt");
-                    save.write(TextareaLineas.getText());
-                    save.close();
-                    JOptionPane.showMessageDialog(null, "Archivo creado correctamente!! ", "Guardado", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Aceptar2.png"));
-                    
-                }
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(null, "Error al creal el arvchivo " + ex, "Error", JOptionPane.INFORMATION_MESSAGE, new ImageIcon("src/Imagenes/Cancelado.png"));
-                
-            }
-        }
-        
-        TextareaLineas.setText("");//Limpiando el TextArea
-        
+        TexPane22.setText("");
+        ficheroa = null;
 
     }//GEN-LAST:event_itemNuevoActionPerformed
-    
+
+    class resaltador extends DefaultHighlighter.DefaultHighlightPainter {
+
+        public resaltador(Color color) {
+            super(color);
+        }
+
+    }
+
+    Highlighter.HighlightPainter resaltador = new resaltador(Color.orange);
+
+    public void quitarResaltado(JTextComponent txt) {
+        Highlighter res = txt.getHighlighter();
+        Highlighter.Highlight[] resa = res.getHighlights();
+        for (Highlighter.Highlight resa1 : resa) {
+            res.removeHighlight(resa1);
+        }
+
+    }
+
+    public void resaltar(JTextComponent txt, String palabra) {
+        quitarResaltado(TexPane22);
+        try {
+            Highlighter res = txt.getHighlighter();
+            Document doc = txt.getDocument();
+            String text = doc.getText(0, doc.getLength());
+            int pos = 0;
+            while ((pos = text.toUpperCase().indexOf(palabra.toUpperCase(), pos)) >= 0) {
+
+                res.addHighlight(pos, pos + palabra.length(), resaltador);
+                pos += palabra.length();
+            }
+        } catch (Exception ex) {
+        }
+    }
+    private void itemBuscarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_itemBuscarActionPerformed
+        // TODO add your handling code here:
+        int conta = 0;
+        String elemento;
+        StringTokenizer palabras = new StringTokenizer(TexPane22.getText());
+        String buscar = JOptionPane.showInputDialog(rootPane, "Ingrese la palabra que desea buscar:", "Buscar", JOptionPane.PLAIN_MESSAGE);
+
+        while (palabras.hasMoreElements()) {
+            elemento = palabras.nextToken();
+            if (elemento.toLowerCase().contains(buscar.toLowerCase())) {
+                conta++;
+            }
+        }
+        JOptionPane.showMessageDialog(rootPane, Integer.toString(conta) + " coincidencias encontradas", "Coincidencias", JOptionPane.INFORMATION_MESSAGE);
+        resaltar(TexPane22, buscar);
+    }//GEN-LAST:event_itemBuscarActionPerformed
+
+    private void itemReemplazarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_itemReemplazarActionPerformed
+        int conta = 1;
+        String buscar, elemento, reemplazar, resultado;
+        StringTokenizer palabras = new StringTokenizer(TexPane22.getText());
+        buscar = JOptionPane.showInputDialog(rootPane, "Ingrese la palabra que desea buscar:", "Buscar", JOptionPane.PLAIN_MESSAGE);
+        while (palabras.hasMoreElements()) {
+            elemento = palabras.nextToken();
+            if (elemento.equals(buscar) || elemento.equals(buscar + ".") || elemento.equals(buscar + ",") || elemento.equals(buscar + ";") || elemento.equals(buscar + ":")) {
+                conta++;
+            }
+        }
+        reemplazar = JOptionPane.showInputDialog(rootPane, Integer.toString(conta) + " coincidencias encontradas\n" + "Con que palabra desea reemplazar el texto buscado:", "Reemplazar", JOptionPane.PLAIN_MESSAGE);
+
+        elemento = TexPane22.getText();
+        resultado = elemento.replace(buscar, reemplazar);
+        TexPane22.setText("");
+        TexPane22.setText(resultado);
+    }//GEN-LAST:event_itemReemplazarActionPerformed
+
     public void contar() {
-        int Area = TextareaLineas.getRows();
-        System.out.println("" + Area);
-        
+        //      int Area = TexPane22.getRows();
+        //      System.out.println("" + Area);
+
     }
 
     /**
@@ -685,7 +791,7 @@ public class Control extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JTextArea TextareaLineas;
+    private javax.swing.JTextPane TexPane22;
     private javax.swing.JButton btnColor;
     private javax.swing.JButton btnLimpiar;
     private javax.swing.JButton btnSalir;
